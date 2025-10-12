@@ -1,0 +1,28 @@
+---
+title: "Data wrangling exercise"
+format: 
+  html:
+    embed-resources: true
+---
+
+
+## Quick Exercises
+
+1. Write a function called **my_range** that computes the difference between the 90% and 10% quantiles of a vector, and another function called **my_cov** that computes the coefficient of variation of a vector (defined as the standard deviation divided by mean). Use these functions to work out how "variable"" each movie's ratings are, and hence what the most variable (in the sense of love-them-or-hate-them) movies are. Do the same for users i.e. find out which users give the most variable ratings, in terms of your two variability functions.
+
+2. Do the exercises in [Chapter 5](http://r4ds.had.co.nz/transform.html) (data transformation using the **dplyr** verbs) and [Chapter 13](http://r4ds.had.co.nz/relational-data.html) (on database joins) of R4DS. There are exercises at the end of each major subsection. Do as many of these exercises as you need to feel comfortable with the material - I suggest doing at least the first two of each set of exercises.
+
+
+## Exercises on MovieLens data 
+
+
+1. Using the MovieLens data, use database joins to add the full movie title, genre, and IMDB id to the `ratings` dataset.
+
+2. Identify a movie "of interest" (preferably a movie that lots of people have rated -- say in the 10th most rated movie). Calculate :  
+- the number of movies rated in the same genre as the movie of interest
+- the average rating given to the movie of interest
+- the number of tags provided (overall) for the movie of interest
+
+3. Do users who provide tags give higher ratings on average than those who don't? Do users who provide tags give higher ratings on average to those movies they've tagged than those they have not tagged? Think of another data exploration question you could answer with `dplyr` functions, and answer it 
+
+4. Write a function using `dplyr` functions that returns a data frame with $N$ rows and $M$ columns (i.e. a $N\times M$ matrix) containing the reviews made on $M$ movies by $N$ users (you can use this matrix in one of the later lessons to build a recommendation system). Choose the $M$ most frequently rated movies and choose users who have rated *some but not all* of the selected movies (to ensure that there are a reasonable proportion of empty ratings i.e. unrated movies, for the recommender systems to fill in). *There are almost definitely several ways to do this*.

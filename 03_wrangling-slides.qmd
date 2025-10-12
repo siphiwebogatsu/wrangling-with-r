@@ -1,0 +1,850 @@
+---
+title: "Data wrangling using `tidyverse`"
+#date: "`r format(Sys.time(), '%d %B, %Y')`"
+date: "10 October 2025"
+format: 
+  revealjs:
+      smaller: false
+      scrollable: true
+      theme: default
+      footer: "DataFirst: Intro to R"
+      slide-number: true
+      show-slide-number: print
+      echo: true
+      embed-resources: true
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+
+# Save workspace way
+load("data/movielens-small.RData")
+```
+
+# Road map 
+
+- Select rows and columns
+- Sort rows and columns 
+- Mutate columns 
+- Pipes "|>" "%>%
+- Grouping and summarizing 
+- Data frame vs tibble 
+- Joining data frames 
+
+# Example dataset
+
+## Movielens dataset
+
+- Movie ratings on 1-5 scale (1 = bad, 5 = good)
+- 610 users, 9742 movies, 100836 ratings, 3683 tags 
+- created between 1996 and 2018
+- Benchmark dataset for e.g. recommender systems
+
+## Movielens dataset
+
+Four related data frames:
+
+- links.csv
+- movies.csv
+- ratings.csv
+- tags.csv
+
+Saved as *movielens-small.RData*.
+
+## ratings
+
+```{r}
+head(ratings)
+```
+
+## movies
+
+```{r}
+head(movies)
+```
+
+## links
+
+```{r}
+head(links)
+```
+## tags
+
+```{r}
+head(tags)
+```
+
+# Base R
+
+## Select rows
+
+```{r}
+#| eval=FALSE
+ratings[ratings$userId == 2, ]
+```
+
+- cleaner?
+- tidier?
+
+```{r}
+#| eval=FALSE
+id <- which(ratings$userId == 2)
+ratings[id, ]
+```
+
+## Sort rows
+
+Order by userId and rating
+
+```{r}
+#| eval: false
+
+
+ratings[order(ratings$userId, ratings$rating), ]
+```
+
+- Alternatively you can use the `with` command to write `ratings` a few less times
+
+```{r}
+#| eval: false
+with(ratings, ratings[order(userId, rating),])
+```
+
+## What is the `tidyverse`?
+
+A collection of `R` packages.
+
+- `ggplot2` - visualisation
+- `dplyr`, `tidyr` - data manipulation
+- `purrr` - advanced programming
+- `readr` - import data
+- `tibble` - improved data.frame format
+- `forcats` - working with factors
+- `stringr` - working with chain of characters
+
+These are the **core** `R` packages in the tidyverse but there are numerous others for working with dates/times, importing other types of data and modelling. For more information see the [tidyverse website](https://tidyverse.tidyverse.org/).
+
+# `dplyr` basics
+
+## Selecting rows with `filter`
+
+```{r}
+#| output-location: fragment
+u1 <- filter(ratings, userId == 1)
+u1
+```
+
+## Selecting rows with `filter`
+
+Multiple filter conditions are created with `&` (and) and `|` (or).
+
+```{r}
+#| output-location: fragment
+u1_likes = filter(ratings, userId == 1 & rating > 3)
+u1_likes
+
+filter(ratings, userId == 1, rating > 3)
+```
+
+Equivalent to  with `filter(ratings, userId == 1, rating > 3)`
+
+## Selecting rows with `filter`
+
+The `%in%` command is often useful...
+
+```{r}
+#| output-location: fragment
+filter(ratings, userId == 5, rating %in% c(1,5))
+```
+
+## Selecting columns with `select`
+
+Select columns `movieId` and `rating`
+
+```{r}
+#| output-location: fragment
+select(u1_likes, movieId, rating)
+```
+
+## Selecting columns with `select`
+
+To exclude variables put a minus sign in front of them
+
+```{r}
+#| output-location: fragment
+select(u1_likes, -userId, -timestamp)
+```
+
+## Selecting columns with `select`
+
+Use to reorder variables, with helper function `everything()`.
+
+```{r}
+#| output-location: fragment
+u1_temp <- select(u1_likes, timestamp, everything())
+u1_temp
+```
+
+## Arranging rows with `arrange`
+
+```{r}
+#| output-location: fragment
+arrange(u1_temp, timestamp)
+```
+
+## Arranging rows with `arrange`
+
+```{r}
+#| output-location: fragment
+arrange(u1_temp, desc(timestamp))
+```
+
+## Arranging rows with `arrange`
+
+```{r}
+#| output-location: fragment
+arrange(u1_temp, rating, desc(timestamp))
+```
+
+## Adding new variables with `mutate`
+
+```{r}
+#| output-location: fragment
+u1 <- mutate(u1, likes_movie = rating > 3, 
+             sq_rating = rating^2,
+             std_rating = rating - mean(rating)) 
+u1
+```
+
+# Pipes
+
+## Pipes
+
+- This is where the power of `tidyverse` comes in
+- A pipe (`%>%`) allows us to combine commands such as filtering a dataset and then arranging by a column
+
+## Pipes
+
+- Base R
+
+```{r}
+#| output-location: fragment
+u1 <- ratings[ratings$userId == 1,]
+u1 <-  u1[, c("timestamp", "movieId", "rating")]
+u1$likes_movie <- u1$rating > 3
+u1$sq_rating <- u1$rating ^2
+u1$std_rating <- u1$rating - mean(u1$rating)
+u1 <- u1[order(u1$timestamp), ]
+head(u1)
+```
+
+
+## Pipes
+
+- `tidyverse`
+
+```{r}
+#| output-location: fragment
+u1_t <- ratings %>%
+  filter(userId == 1) %>%
+  select(timestamp, movieId, rating) %>%
+  mutate(likes_movie = rating > 3, 
+         sq_rating = rating^2,
+         std_rating = rating - mean(rating)) %>%
+  arrange(timestamp)
+
+
+u1_t %>% head()
+```
+
+# Grouping and summarising
+
+## `group_by` and `summarise`
+
+```{r}
+#| output-location: fragment
+ratings %>% 
+  filter(userId <= 10) %>%
+  group_by(userId) %>% 
+  summarise(mean_rating = mean(rating),
+            n = n())
+```
+
+
+## `group_by` and `summarise`
+
+- Helper function `tally()` 
+- Like `df %>% summarise(n = n())`
+
+```{r}
+#| output-location: fragment
+ratings %>% 
+  filter(userId <= 10) %>%
+  group_by(userId) %>%
+  tally()
+```
+
+## `group_by` and `summarise`
+
+- Helper function `count(a)` 
+- Like`df %>% group_by(a) %>% summarise(n = n())`
+
+```{r}
+#| output-location: fragment
+ratings %>% 
+  filter(userId <= 10) %>%
+  count(userId) 
+```
+
+## `group_by` and `summarise`
+
+You can also pass your own summary functions to the pipe:
+
+```{r}
+#| code-line-numbers: "1|2-5"
+#| output-location: fragment
+compute_60q <- function(x){quantile(x, probs = 0.60)}
+ratings %>% 
+  filter(userId <= 10) %>%
+  group_by(userId) %>% 
+  summarize(q60 = compute_60q(rating))
+```
+
+## `group_by` and other `dplyr` functions
+
+- Summarising is useful but sometimes you don't want to collapse down the dataset. 
+- You might want a new column where the calculation depends on the grouping
+- For example: Putting the mean rating in a column, where the mean depends on the movie
+
+## `group_by` and other `dplyr` functions
+
+::: columns
+::: {.column width="50%"}
+```{r}
+#| output-location: fragment
+ratings %>% 
+  group_by(movieId) %>% 
+  mutate(movie_mean = mean(rating)) %>%
+  filter(userId <= 10) 
+```
+:::
+
+::: {.column width="50%"}
+
+:::
+:::
+
+## `group_by` and other `dplyr` functions
+
+::: columns
+::: {.column width="50%"}
+```{r}
+ratings %>% 
+  group_by(movieId) %>% 
+  mutate(movie_mean = mean(rating)) %>%
+  filter(userId <= 10) 
+```
+:::
+
+::: {.column width="50%"}
+- Notice that we now have a `tibble` not a `data.frame`
+- `tibble's` are more flexible than data frames (can contain columns that are lists, or have spaces in names...)
+- Two main differences are in the printing and subsetting. 
+:::
+:::
+
+# data frame vs tibble
+
+## Printing
+
+```{r}
+ratings.df <- ratings
+ratings.tbl <- as_tibble(ratings)
+```
+
+**Tibble** has a more advanced print function - it shows only the first 10 rows and gives data types
+
+```{r}
+#| code-line-numbers: false
+ratings.tbl
+```
+
+## Subsetting
+
+- data frame: 
+- selecting elements from a column returns a **vector**.
+
+```{r}
+ratings.df[1:6, 1]
+```
+
+```{r}
+class(ratings.df[1:6, 1])
+dim(ratings.df[1:6, 1])
+```
+
+## Subsetting
+
+- tibble
+- selecting elements from a column returns a **tibble**
+
+```{r}
+ratings.tbl[1:6, 1]
+```
+
+```{r}
+class(ratings.tbl[1:6, 1])
+dim(ratings.tbl[1:6, 1])
+```
+
+## data frame vs tibble
+
+[**So it is very important you know what class your data object is when trying to manipulate it**]{style="color:#cc0000"}
+
+
+# Other useful functions
+
+## `across`
+
+- useful for applying functions to a selection of columns
+- can be used within `mutate()` or `summarise()`
+
+```{r}
+#| output-location: fragment
+ratings %>%
+  group_by(userId) %>%
+  summarise(across(where(is.numeric), mean))
+```
+
+## `slice()` and variants
+
+```{r}
+#| output-location: fragment
+ratings %>%
+  slice(3:6)
+```
+
+## `slice()` and variants
+
+```{r}
+#| output-location: fragment
+ratings %>%
+  slice_head(n = 3)
+```
+
+## `slice()` and variants
+
+```{r}
+#| output-location: fragment
+ratings %>%
+  filter(userId <= 10) %>%
+  group_by(userId) %>%
+  slice_min(order_by = timestamp, n = 2)
+```
+
+## `rename()`
+
+```{r}
+#| output-location: fragment
+ratings %>%
+  rename(myrating = rating) %>%
+  head(2)
+```
+
+## `pivot_wider()`
+
+```{r}
+#| output-location: fragment
+ratings_wide <- ratings %>% 
+  filter(userId <= 10) %>%
+  pivot_wider(id_cols = userId,
+              names_from = movieId, 
+              values_from = rating)
+ratings_wide
+```
+
+## `pivot_longer()`
+
+```{r}
+#| output-location: fragment
+ratings_long <- ratings_wide %>% 
+  pivot_longer(cols = -userId, 
+               names_to = "movieId", 
+               values_to = "rating")
+head(ratings_long)
+```
+
+# Combining data frames with *joins*
+
+## Kinds of joins 
+
+- Mutating joins (add variables)
+  - left join
+  - right join
+  - inner join
+  - full join
+
+- Filtering joins (don't add variables)
+  - semi join
+  - anti join
+
+## First make some example data 
+
+Source: [http://r4ds.had.co.nz/relational-data.html](http://r4ds.had.co.nz/relational-data.html)
+
+```{r, echo = FALSE}
+x <- tribble(
+  ~key, ~xvalue,
+  1, "x1",
+  2, "x2",
+  3, "x3"
+)
+```
+
+```{r, echo = FALSE}
+y <- tribble(
+  ~key, ~yvalue,
+  1, "y1",
+  2, "y2",
+  4, "y3"
+)
+```
+
+```{r}
+x
+```
+
+```{r}
+y
+```
+
+# Mutating joins
+
+## `inner_join` 
+
+Keeps observations that appear in *both* tables. 
+
+::: columns
+::: {.column width="50%"}
+```{r}
+x
+```
+
+```{r}
+y
+```
+:::
+
+::: {.column width="50%"}
+```{r}
+#| output-location: fragment
+inner_join(x,y)
+```
+:::
+:::
+
+## `inner_join` 
+
+Keeps observations that appear in *both* tables. 
+
+::: columns
+::: {.column width="50%"}
+```{r}
+x
+```
+
+```{r}
+y
+```
+:::
+
+::: {.column width="50%"}
+```{r}
+#| output-location: fragment
+inner_join(y,x)
+```
+:::
+:::
+
+## `left_join`
+
+keeps all observations from the left table (first argument).
+
+::: columns
+::: {.column width="50%"}
+```{r}
+x
+```
+
+```{r}
+y
+```
+:::
+
+::: {.column width="50%"}
+```{r}
+#| output-location: fragment
+left_join(x, y)
+```
+:::
+:::
+
+## `left_join`
+
+keeps all observations from the left table (first argument).
+
+::: columns
+::: {.column width="50%"}
+```{r}
+x
+```
+
+```{r}
+y
+```
+:::
+
+::: {.column width="50%"}
+```{r}
+#| output-location: fragment
+left_join(y, x)
+```
+:::
+:::
+
+## `right_join`
+
+keeps all observations from the right table (second argument).
+
+::: columns
+::: {.column width="50%"}
+```{r}
+x
+```
+
+```{r}
+y
+```
+:::
+
+::: {.column width="50%"}
+```{r}
+#| output-location: fragment
+right_join(x, y)
+```
+:::
+:::
+
+## `right_join`
+
+keeps all observations from the right table (second argument).
+
+::: columns
+::: {.column width="50%"}
+```{r}
+x
+```
+
+```{r}
+y
+```
+:::
+
+::: {.column width="50%"}
+```{r}
+#| output-location: fragment
+right_join(y, x)
+```
+:::
+:::
+
+## `full_join`
+
+keeps all observations from the left and right table.
+
+::: columns
+::: {.column width="50%"}
+```{r}
+x
+```
+
+```{r}
+y
+```
+:::
+
+::: {.column width="50%"}
+```{r}
+#| output-location: fragment
+full_join(x, y)
+```
+:::
+:::
+
+## `full_join`
+
+keeps all observations from the left and right table.
+
+::: columns
+::: {.column width="50%"}
+```{r}
+x
+```
+
+```{r}
+y
+```
+:::
+
+::: {.column width="50%"}
+```{r}
+#| output-location: fragment
+full_join(y, x)
+```
+:::
+:::
+
+# Filtering joins
+
+## `semi_join` 
+
+keeps all observations from the first table that appear in the second (note variables are from the first table only):
+
+::: columns
+::: {.column width="50%"}
+```{r}
+x
+```
+
+```{r}
+y
+```
+:::
+
+::: {.column width="50%"}
+```{r}
+#| output-location: fragment
+semi_join(x,y)
+```
+:::
+:::
+
+## `semi_join`  
+
+keeps all observations from the first table that appear in the second (note variables are from the first table only):
+
+::: columns
+::: {.column width="50%"}
+```{r}
+x
+```
+
+```{r}
+y
+```
+:::
+
+::: {.column width="50%"}
+```{r}
+#| output-location: fragment
+semi_join(y,x)
+```
+:::
+:::
+
+## `anti_join`
+
+*drops* all observations from the first table that appear in the second table (note variables are from the first table only).
+
+::: columns
+::: {.column width="50%"}
+```{r}
+x
+```
+
+```{r}
+y
+```
+:::
+
+::: {.column width="50%"}
+```{r}
+#| output-location: fragment
+anti_join(x,y)
+```
+:::
+:::
+
+## `anti_join`
+
+*drops* all observations from the first table that appear in the second table (note variables are from the first table only).
+
+::: columns
+::: {.column width="50%"}
+```{r}
+x
+```
+
+```{r}
+y
+```
+:::
+
+::: {.column width="50%"}
+```{r}
+#| output-location: fragment
+anti_join(y,x)
+```
+:::
+:::
+
+# Joining on multiple keys
+
+## Multiple keys
+
+- Add tag info to ratings data frame
+
+```{r}
+#| output-location: fragment
+ratings_with_tags <- left_join(ratings, tags, by = c("movieId", "userId"))
+head(ratings_with_tags)
+```
+
+## Multiple keys
+
+But notice it's increased the number of rows in the dataset!
+
+```{r}
+nrow(ratings)
+nrow(ratings_with_tags)
+```
+
+That's because a user can give a movie more than one tag. 
+
+```{r}
+#| code-line-numbers: "1|2|3-4"
+first_tag <- tags %>% group_by(userId, movieId) %>% slice_head(n = 1)
+ratings_with_tags <- left_join(ratings, first_tag, by = c("movieId", "userId"))
+nrow(ratings_with_tags)
+nrow(ratings)
+```
+
+## Multiple keys
+
+What if key variables are called different names in two datasets? Could rename. Alternatively, 
+
+```{r}
+#| code-line-numbers: "1|2|4|5"
+#| output-location: fragment
+first_tag2 <- tags %>% rename(filmId = movieId) %>% 
+  group_by(userId, filmId) %>% slice_head(n = 1)
+
+ratings_with_tags <- left_join(ratings, first_tag2, by = c("movieId" = "filmId", "userId"))
+head(ratings_with_tags)
+```
+
+## Sources and further reading
+
+- [https://r4ds.hadley.nz/data-transform](https://r4ds.hadley.nz/data-transform)  
+- [https://r4ds.hadley.nz/joins.html](https://r4ds.hadley.nz/joins.html)
+- [https://grouplens.org/datasets/movielens/](https://grouplens.org/datasets/movielens/)
