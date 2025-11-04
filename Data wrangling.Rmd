@@ -1,0 +1,878 @@
+---
+title: ""
+author: "Instructors: Chifundo Kanjala, Siphiwe Bogatsu and Mikaela Davies"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+output:
+  rmdformats::readthedown:
+    number_sections: true
+    toc_depth: 2
+    self_contained: true
+    highlight: kate
+    css: ./datafirst.css
+  # or simpler:
+  # html_document:
+  #   toc: true
+  #   toc_depth: 2
+encoding: "UTF-8"
+link-citations: true
+---
+
+
+```{=html}
+<div class="banner">
+  <img src="./images/datafirst_logo.png" class="logo" alt="DataFirst" />
+  <div class="banner-title">
+    <div class="line1">Introduction to R Notes</div>
+    <div class="line2">Data wrangling with dplyr</div>
+  </div>
+</div>
+```
+
+
+# Tidyverse: A Deeper Dive
+
+In the earlier section, we introduced the tidyverse as a modern collection of R packages designed to make working with data easier and more consistent.
+Now, before we begin data wrangling with `dplyr`, let's take a closer look at how the tidyverse works and why it has become so central to modern R practice.
+
+## What makes the **tidyverse** special?
+
+The tidyverse is not just a group of packages - it represents a philosophy of data analysis.Its design emphasizes clarity, consistency, and reproducibility. When you learn one tidyverse package, many of the same ideas and syntax patterns carry over to others.
+
+At its heart are three key ideas:
+
+Tidy data principles
+Every tidyverse package expects data to be in tidy format, where:
+
+each variable forms a column,
+
+each observation forms a row, and
+
+each value has its own cell.
+This structure makes data easier to manipulate, visualize, and model.
+
+A consistent syntax and grammar
+Most tidyverse functions are **verb-based** and take a data frame as their first argument.
+In this context, a verb simply means a function that performs one clear action on your data - such as *filtering*, *sorting*, or *summarising*.
+Because each function both takes in and returns a data frame, you can easily chain them together in a logical sequence. This leads us to the next key feature.
+
+## The pipe operator (`%>%`)
+The pipe lets you send the result of one function directly into the next, creating clear, step-by-step code.
+
+For example:
+
+```{r, eval=FALSE}
+data %>%
+  filter(age > 18) %>%
+  arrange(desc(income))
+```
+
+reads as "take the data, keep rows where `age > 18`, then arrange by income in descending order."
+
+## Why learn dplyr first?
+
+Among all tidyverse packages, `dplyr` is often the best starting point because it provides a simple, intuitive grammar for data manipulation.
+It introduces five core verbs - `filter()`, `arrange()`, `mutate()`, `summarise()`, and `group_by()` - that cover most day-to-day data wrangling tasks.
+
+Once you understand how these verbs interact with each other (and with the pipe), you will find it much easier to explore, clean, and prepare real datasets for analysis or visualization.
+
+Connecting the tidyverse to your workflow
+
+In the next section, we will:
+
+Load data efficiently (saving and reusing `.RData` files),
+
+Use `dplyr` verbs to clean and transform data,
+
+Combine operations into pipelines for more readable code, and
+
+Apply what we learn to build a small movie ratings dataset.
+
+By the end, you will not only know how to use `dplyr`, but also start thinking the tidyverse way-using clear, expressive code that mirrors the logic of your analysis.
+
+
+
+# Data wrangling with dplyr
+
+So far, we have been using `base R` to learn the fundamentals - how to navigate RStudio, create and work with different data types, and produce simple descriptive summaries. When we learned to import data, we also took a brief, first look at the tidyverse, a collection of modern R packages that make working with data easier and more consistent.
+
+Now, we are going to explore one of the most widely used tidyverse packages, `dplyr` , which provides a simple and intuitive way to manipulate data. With `dplyr`, you can `filter`, `arrange`, `transform`, and `summarise` data using functions that read almost like plain English.
+These functions (called verbs) work seamlessly together, and when combined with the pipe operator (`%>%`), they allow you to build clear, step-by-step workflows that are both efficient and easy to follow.
+
+
+## Learning objectives
+
+By the end of this lesson you should be able to:
+
+-   Save data efficiently by converting a .csv file into an .RData object.
+
+-   Apply data transformation techniques using the five key **dplyr** verbs:
+
+    -   filter()
+
+    -   arrange()
+
+    -   mutate()
+
+    -   summarise()
+
+    -   group_by()
+
+-   Use the pipe operator (`%>%`) to write cleaner and more readable R code.
+
+-   Combine multiple dplyr verbs to perform complex data manipulations (e.g., grouped filtering or mutating).
+
+-   Construct a small movie rating dataset using dplyr functions to prepare for a later lesson on recommended systems.
+
+-   Perform various join operations to merge and relate data across multiple tables.
+
+
+
+## Saving Data as an .RData Object
+
+**Get the MovieLens data and save as .RData**
+
+[MovieLens](https://grouplens.org/datasets/movielens/) is a great resource for data on movie ratings. The full dataset has ratings on 58 000 movies by 280 000 users, some 27 million ratings in all. We'll use a smaller dataset with ratings of 9 000 movies by 600 users (100 000 ratings in all).
+
+### Option 1 - Manual download
+Download the file "ml-latest-small.zip" from <https://grouplens.org/datasets/movielens/> and unzip it to the *data* directory in your main project folder (make a folder called *data* if you haven't already). You should see four csv files: `links.csv`, `movies.csv`, `ratings.csv`, and `tags.csv`.
+
+You can also do this programmatically in R:
+
+### Option 2 - Programmatically in R
+
+**Note**: Don't worry if this looks complex - you don't need to understand each line for now.
+Just think of it as a ready-made R script that does everything for you:
+it creates a folder, downloads the MovieLens file, and unzips it automatically.
+You can copy, paste, and run the code as-is.
+Later, when you're more comfortable with R, you can come back to this and explore what each step means.
+
+```{r}
+# Create data/ if it doesn't exist
+if (!dir.exists("data")) dir.create("data")
+
+# Download (HTTPS + binary mode avoids zip corruption on Windows)
+zip_path <- "data/ml-latest-small.zip"
+if (!file.exists(zip_path)) {
+  download.file(
+    url = "https://files.grouplens.org/datasets/movielens/ml-latest-small.zip",
+    destfile = zip_path,
+    mode = "wb"
+  )
+}
+
+# Unzip (only if the extracted folder isn't there yet)
+if (!dir.exists("data/ml-latest-small")) {
+  unzip(zip_path, exdir = "data")
+}
+```
+
+
+
+```{r}
+# dir.create("data")
+# download.file(
+#   url = "http://files.grouplens.org/datasets/movielens/ml-latest-small.zip", 
+#   destfile = "data/ml-latest-small.zip"
+# )
+# unzip("data/ml-latest-small.zip", exdir = "data")
+```
+
+First let's save the data we downloaded as an .RData object..RData files are more efficient than .csv files because they: 
+  - Take up less storage space, and 
+  - Allow you to save multiple datasets together in a single file.
+
+This means you can store all four of your .csv files in one .RData object and easily reload them later with a single load() command.
+
+For example:
+
+```{r}
+# read in the csv files
+movies <- read.csv("data/ml-latest-small/movies.csv")  # movie info: title and genre
+ratings <- read.csv("data/ml-latest-small/ratings.csv") # user ratings for each movie
+tags <- read.csv("data/ml-latest-small/tags.csv") # additional user reviews ("tag")
+links <- read.csv("data/ml-latest-small/links.csv") # lookup for imdb movie IDs
+
+# save as .RData
+save(links, movies, ratings, tags, file = "data/movielens-small.RData")
+
+# check that it's worked
+rm(list = ls())
+load("data/movielens-small.RData")
+```
+
+This step only needs to be completed once. After saving your data as an .RData file, you can begin future sessions from this point by simply loading the dataset, without repeating the save process. so once you've got the data saved as .RData, start running the script from here.
+
+## Introduction to Data Transformation
+
+**Loading the tidyverse package**
+
+Load the **tidyverse** collection of packages, which loads the following packages: **ggplot2**, **tibble**, **tidyr**, **readr**, **purrr**, and **dplyr**.
+
+-   ggplot2: For data visualization (this will be revisited in detail later)
+-   tibble: For creating and working with tidy data frames
+-   tidyr: For tidying messy data
+-   readr:For importing rectangular data (like CSV files) quickly and efficiently
+-   purrr:For functional programming
+-   **dplyr**: For data manipulation using verbs like filter(), mutate(), summarise(), and arrange().
+
+Load the **tidyverse** by running the command below:
+
+```{r}
+library(tidyverse)
+```
+
+Load the MovieLens data by running the command below:
+
+```{r}
+load("data/movielens-small.RData")
+```
+
+**Working with Tibbles**
+
+Tibbles are a of data frame that work very well with **tidyverse** packages.\
+They are easier to read and manipulate than traditional data frames, especially when you have many rows or columns.
+
+If your data is currently a standard data frame, convert it to a tibble using `as_tibble()`.\
+This makes it compatible with tidyverse functions and easier to work with.
+
+**Example**
+
+```{r}
+# convert ratings to a "tibble"
+ratings <- as_tibble(ratings)
+```
+
+A nice feature of tibbles is that if you display them in the console (by typing `ratings`, for example) only the first few rows and columns are shown.
+
+```{r}
+ratings
+```
+
+**Explore variables**
+
+To understand your dataset better, you can use:
+
+```{r}
+str(ratings)
+```
+
+```{r}
+glimpse(ratings)
+```
+
+```{r}
+glimpse(movies)
+```
+
+We'll look at database joins in more detail, but for now, this just add movie title to the `ratings` data by pulling that information from `movies`.
+
+Join the movies and ratings data by running the command below:
+
+```{r}
+ratings <- left_join(ratings, movies)
+```
+
+This uses a left join, which keeps all rows in ratings and brings in matching columns from movies. Think of a left join as “keep everything on the left, add what matches from the right.”
+
+## The Five Key dplyr Verbs
+
+### Filtering rows with `filter()`
+
+The `filter()` function from **dplyr** is used to extract rows from a dataset that meet certain conditions.
+
+Here we illustrate the use of `filter()` by extracting user 1's observations from the *ratings* data frame.
+
+```{r}
+u1 <- filter(ratings, userId == 1)
+u1
+```
+
+Next we extract the observations for user 1 that received a rating greater than 3. Multiple filter conditions are created with `&` (and) and `|` (or).
+
+```{r}
+filter(ratings, userId == 1 & rating > 3)
+```
+
+Here's another way of writing the same condition as above:
+
+```{r}
+filter(ratings, userId == 1, rating > 3)
+```
+
+The `%in%` command is often useful when using dplyr verbs:
+
+```{r}
+filter(ratings, userId == 1, rating %in% c(1,4))
+```
+
+**Guided Practice**
+
+Let’s practice filtering data in R:
+
+```{r, echo=TRUE, eval=FALSE}
+
+# Extract ratings for user 2
+
+filter(ratings, userId == 2)
+
+# Extract ratings for user 2 greater than or equal to 4
+
+filter(ratings, userId == 2, rating >= 4)
+
+# Extract ratings that are either 2 or 5
+
+filter(ratings, rating %in% c(2, 5))
+```
+
+**Independent Practice**
+
+Try the following exercises on your own:
+
+1.  Extract all ratings for user 3 and assign it to a new variable u3.
+
+2.  Filter user 3’s ratings to only include values greater than 3.
+
+3.  Use %in% to filter user 3’s ratings to include only 1, 3, or 5.
+
+4.  Experiment with multiple conditions using & and \|. For example, find all ratings for user 4 greater than 2 or equal to 5.
+
+**Challenge**
+
+1.  Combine filtering with a join: extract user 1’s ratings and add the movie title from the movies dataset using left_join().
+
+### Introducing the pipe
+
+The pipe operator `%>%` is a very useful way of chaining together multiple operations. A typical format is something like:
+
+*data* `%>%` *operation 1* `%>%` *operation 2*
+
+You read the code from left to right: Start with *data*, apply some operation (operation 1) to it, get a result, and then apply another operation (operation 2) to that result, to generate another result (the final result, in this example). A useful way to think of the pipe is as similar to "then".
+
+The main goal of the pipe is to make code easier, by focusing on the transformations rather than on what is being transformed. Usually this is the case, but it's also possible to get carried away and end up with a huge whack of piped statements. Deciding when to break a block up is an art best learned by experience.
+
+**Example**
+
+```{r}
+# filtering with the pipe
+ratings %>% filter(userId == 1)
+```
+
+The main usefulness of the pipe is when combining multiple operations:
+
+**Guided practice**
+
+```{r, results='hide'}
+# first filter on userId then on rating
+u1_likes <- ratings %>% filter(userId == 1) %>% filter(rating > 3)
+u1_likes
+```
+
+```{r, eval=FALSE}
+# another way of doing the same thing
+ratings %>% filter(userId == 1 & rating > 3)
+```
+
+### Arranging rows with `arrange()`
+
+The `arrange()` function from **dplyr** lets you order rows in your dataset based on one or more columns.
+
+**Example**
+
+Ordering user 1's "liked" movies in descending order of rating (note the use of `desc`):
+
+```{r}
+arrange(u1_likes, desc(rating))
+```
+
+Subsequent arguments to `arrange()` can be used to arrange by multiple columns. Here we first order user 1's liked movies by rating (in descending order) and then by timestamp (in ascending order)
+
+
+**Guided practice**
+```{r, eval=FALSE}
+arrange(u1_likes, desc(rating), timestamp)
+```
+
+We can also use the pipe to do the same thing:
+
+**Example**
+```{r}
+u1_likes %>% arrange(desc(rating))
+```
+
+Finally, here's an example of combining filter and arrange operations with the pipe:
+
+```{r}
+ratings %>% filter(userId == 1 & rating > 3) %>% arrange(desc(rating))
+```
+
+**Guided practice** 
+
+Try these exercises:
+
+1.  Arrange user 2's ratings in descending order
+
+```{r, eval=FALSE}
+ratings %>% filter(userId == 2) %>% arrange(desc(rating))
+```
+
+2.  Arrange user 2's ratings by rating descending, then by movieId ascending
+
+```{r, eval=FALSE}
+
+ratings %>% filter(userId == 2) %>% arrange(desc(rating), movieId)
+
+#Tip: Use desc() to sort a column in descending order. Without desc(), arrange() sorts in ascending order by default.
+```
+
+**Independent Practice**
+
+1.  Filter ratings for user 3 where rating \> 3 and arrange them by rating descending.
+
+2.  Try arranging user 3’s ratings first by rating (descending) and then by timestamp (ascending).
+
+3.  Combine filter(), arrange(), and %\>% into a single pipeline for user 4 ratings \> 2.
+
+**Challenge**
+
+1.  Filter all ratings above 4, join with movie titles using left_join(), and arrange by rating descending and title ascending.
+
+### Selecting columns with `select()`
+
+Select is a bit like `filter()` for columns. The syntax is straightforward, the first argument gives the dataframe, and then you list the variables you want to select!
+
+**Example**
+
+```{r}
+select(u1_likes, title, rating)
+```
+
+To exclude variables just put a minus sign in front of them:
+
+**Example**
+
+```{r}
+select(u1_likes, -userId, -timestamp)
+```
+
+You can also use `select()` to reorder variables. A useful function here is `everything()`.
+
+**Guided practice**
+
+```{r, eval=FALSE}
+# original order
+u1_likes
+
+# reorder so title is first
+select(u1_likes, title, everything())
+```
+
+**Independent Practice**
+
+Try the following exercises using the u1_likes dataset:
+
+1.  Select only the columns title and rating and assign the result to a new variable u1_selected.
+
+2.  Exclude the columns userId and timestamp from u1_likes.
+
+### Adding new variables with `mutate()`
+
+Mutating operations add a new column to a dataframe. Here's a trivial example to get started:
+
+```{r}
+mutate(u1_likes, this_is = "stupid")  
+```
+
+A more useful use of mutate is to construct a new variable based on existing variables. This is the way that `mutate` is almost always used.
+
+**Example**
+
+```{r}
+mutate(u1, like = ifelse(rating > 3, 1, 0))  
+```
+
+We can also use the pipe for mutating operations. Hopefully you're getting used to the pipe by now, so let's embed a mutating operation within a larger pipe than we've used before.
+
+```{r}
+ratings %>% 
+  mutate(like = ifelse(rating > 3, 1, 0)) %>% 
+  filter(userId == 1) %>% 
+  select(like, everything()) 
+```
+
+**Guided Practice**
+
+Try these exercises:
+
+1.  Add a new column 'high_rating' to u1_likes, with 1 if rating \>= 4, 0 otherwise
+
+```{r, eval=FALSE}
+
+u1_likes %>% mutate(high_rating = ifelse(rating >= 4, 1, 0))
+
+```
+
+2.  Create a new variable 'adjusted_rating' that adds 0.5 to each rating
+
+```{r, eval=FALSE}
+
+u1_likes %>% mutate(adjusted_rating = rating + 0.5)
+
+```
+
+3.  Use a pipe to filter user 2's ratings, create a 'like' variable (1 if rating \>3), and select only 'like' and 'rating'
+
+```{r, eval=FALSE}
+
+ratings %>%
+filter(userId == 2) %>%
+mutate(like = ifelse(rating > 3, 1, 0)) %>%
+select(like, rating)
+
+```
+
+**Independent Practice**
+
+1.  For user 3, create a new variable called *liked* that is 1 if rating \> 3 and 0 otherwise.
+
+2.  Create a new variable *rating_plus_one* that adds 1 to the rating column for user 3.
+
+3.  Use a pipe to filter user 4’s ratings \> 2, add a *liked* variable, and select only *userId*, *movieId*, *rating*, and *liked* . \### Aggregating over rows with `summarise()`
+
+The `summarise()` verb (or `summarize()` will also work) summarises the rows in a data frame in some way. When applied to the whole data frame, it will collapse it to a single row. For example, here we take user 1's data, and calculate their average rating and the number of movies they have given a rating higher than 3 to:
+
+```{r}
+summarise(u1, mean = mean(rating), likes = sum(rating > 3))
+```
+
+You need to watch out for NAs when using `summarise()`. If one exists, operations like `mean()` will return NA. You can exclude NAs from calculations using `na.rm = TRUE`:
+
+```{r}
+# introduce an NA
+u1$rating[1] <- NA
+
+# see what happens
+summarise(u1, mean = mean(rating), likes = sum(rating > 3))
+```
+
+```{r}
+# with na.rm = TRUE
+summarise(u1, mean = mean(rating, na.rm = TRUE), likes = sum(rating > 3, na.rm = TRUE))
+```
+
+`summarise()` is most useful when combined with `group_by()`, which imposes a grouping structure on a data frame. After applying `group_by()`, subsequent dplyr verbs will be applied to individual groups, basically repeating the code for each group. That means that `summarise()` will calculate a summary for each group:
+
+```{r}
+# tell dplyr to group ratings by userId
+ratings_by_user <- group_by(ratings, userId)
+
+# apply summarize() to see how many movies each user has rated
+ratings_by_user %>% summarize(count = n()) %>% head()
+```
+
+```{r}
+# or adding grouping with a pipe
+ratings %>% group_by(userId) %>% summarize(count = n()) %>% head(10)
+```
+
+```{r}
+# get sorted counts (and present differently)
+ratings %>% 
+group_by(userId) %>% 
+summarize(count = n()) %>% 
+arrange(desc(count)) %>% 
+head(10) %>%     # take first ten rows
+t()  # transpose 
+```
+
+You can also pass your own summary functions to the pipe:
+
+```{r}
+# my own function, computes the 60% quantile of a vector
+compute_60q <- function(x){quantile(x, probs = 0.60)}
+# use it in a grouped summary
+ratings %>% group_by(userId) %>% summarize(count = n(), q60 = compute_60q(rating)) %>% head(10)
+```
+
+## Other uses of `grouped_by()`: grouped filters and grouped mutates
+
+While you'll probably use `group_by()` most often with `summarise()`, it can also be useful when used in conjunction with `filter()` and `mutate()`. Grouped filters perform the filtering within each group. Below we use it to extract each user's favourite movie (or movies, if there's a tie).
+
+```{r}
+# example of a grouped filter
+ratings %>% group_by(userId) %>% filter(rank(desc(rating)) < 2)
+```
+
+Here we use a grouped mutate to standardise each user's ratings so that they have a mean of zero (for each user, which guarantees the overall mean rating is also zero).
+
+```{r}
+# example of a grouped mutate
+ratings %>% 
+  group_by(userId) %>%
+  mutate(centered_rating = rating - mean(rating)) %>% 
+  select(-movieId, -timestamp, -genres)
+
+#Tip for beginners: Think of group_by() as saying: “Do this operation for each group separately.” After grouping, all your summarise(), mutate(), and filter() operations are applied within each group.
+
+```
+
+## Putting it all together: Building a Movie Rating Dataset
+
+In this section we'll take what we've learned and do something useful: build a 15x20 matrix containing the reviews made on 20 movies by 15 users. We'll use this matrix in one of the next lessons to build a recommendation system.
+
+First, we select the 15 users we want to use. I've chosen to use 15 users with moderately frequent viewing habits (remember there are 610 users and 9724 movies), mainly to make sure there are some (but not too many) empty ratings.
+
+```{r}
+users_frq <- ratings %>% group_by(userId) %>% summarize(count = n()) %>% arrange(desc(count))
+my_users <- users_frq$userId[101:115]
+```
+
+Next, we select the 20 movies we want to use:
+
+```{r}
+movies_frq <- ratings %>% group_by(movieId) %>% summarize(count = n()) %>% arrange(desc(count))
+my_movies <- movies_frq$movieId[101:120]
+```
+
+Now we make a dataset with only those 15 users and 20 movies:
+
+```{r}
+ratings_red <- ratings %>% filter(userId %in% my_users, movieId %in% my_movies) 
+# and check there are 15 users and 20 movies in the reduced dataset
+n_users <- length(unique(ratings_red$userId))
+n_movies <- length(unique(ratings_red$movieId))
+paste("number of users is", n_users)
+paste("number of movies is", n_movies)
+```
+
+Let's see what the 20 movies are:
+
+```{r}
+movies %>% filter(movieId %in% my_movies) %>% select(title)
+```
+
+We now want to reshape the data frame into a 15x20 matrix i.e.from "long" format to "wide" format. This used to be done using the `spread()` verb, but `pivot_wider()` is now recommended.
+
+```{r}
+#before pivot
+ratings_red
+```
+
+```{r}
+#after pivot
+ratings_red %>% pivot_wider(names_from = movieId, values_from = rating)
+```
+
+The preceding line *doesn't* work: as you can see we land up with more than one row per user. But it is useful as an illustration of `pivot_wider()`. Question: why doesn't it work?
+
+Here's the corrected version:
+
+```{r}
+ratings_red %>% select(userId, title, rating) %>% pivot_wider(names_from = title, values_from = rating)
+```
+
+Finally, since we just want to know who has seen what, we replace all NAs with 0 and all other ratings with 1:
+
+```{r}
+viewed_movies <- ratings_red %>% 
+  complete(userId, title) %>%
+  mutate(seen = ifelse(is.na(rating), 0, 1)) %>% 
+  select(userId, title, seen) %>% 
+  pivot_wider(names_from = title, values_from = seen)
+```
+
+We could have got this more simply with a call to `table()`, which creates a two-way frequency table.
+
+```{r, results='hide'}
+table(ratings_red$userId, ratings_red$title)
+```
+
+Finally, we save our output for later use!
+
+```{r}
+dir.create("output")
+save(ratings_red, viewed_movies, file = "output/recommender.RData")
+```
+
+## Combining data frames with *joins*
+
+We'll often need to combine the information contained in two or more tables. To do this, we need various kinds of database *joins*.
+
+This section describes the basic join operations that we need to combine data frames. The examples are taken from [Chapter 13](http://r4ds.had.co.nz/relational-data.html) of R4DS, which also contains a lot more general information on relational data.
+
+First, we make some very simple data tables to show how the joins work:
+
+```{r}
+# make some example data
+x <- tribble(
+  ~key, ~xvalue,
+  1, "x1",
+  2, "x2",
+  3, "x3"
+)
+
+y <- tribble(
+  ~key, ~yvalue,
+  1, "y1",
+  2, "y2",
+  4, "y3"
+)
+
+x 
+y
+```
+
+**Mutating joins: `inner_join`, `left_join`, `right_join`, `full_join`**
+
+The first set of joins we look at are called mutating joins. These first match observations in two tables in some way, and then combine variables from the two tables.
+
+There are four types of mutating joins: inner joins, left joins, right joins, and full joins.
+
+An **inner join** keeps observations that appear in *both* tables.
+
+For example:
+
+```{r}
+inner_join(x,y)
+```
+
+```{r}
+inner_join(y,x)
+```
+
+The other three joints are all **outer joins**: they keep observations that appear in *at least one* of the tables.
+
+A **left join** keeps all observations from the left table (first argument).
+
+For example:
+
+```{r}
+left_join(x,y)
+```
+
+```{r}
+left_join(y,x)
+```
+
+A **right join** keeps all observations from the right table (second argument).
+
+For example:
+
+```{r}
+# note this is the same as left_join(y,x)
+right_join(x,y)
+```
+
+A **full join** keeps all observations from the left and right table.
+
+For example:
+
+```{r}
+full_join(x,y)
+```
+
+We can now re-examine the join we used to add movie titles to the ratings data frame earlier:
+
+```{r}
+# reload the MovieLens data
+load("data/movielens-small.RData")
+ratings <- as_tibble(ratings)
+movies <- as_tibble(movies)
+```
+
+Note that the same *movieId* can appear multiple times in the *ratings* data frame:
+
+```{r}
+ratings %>% arrange(movieId) # note duplicate movieIds
+```
+
+But each *movieId* only appears once in the *movies* data frame:
+
+```{r}
+movies %>% arrange(movieId) # note unique movieIds
+```
+
+In this case a left join by the *movieId* key copies across the movie title information (as well as any other information in the *movies* data frame):
+
+```{r}
+left_join(ratings, movies, by = "movieId") %>% select(title, everything())
+```
+
+**Filtering joins: `semi_join`, `anti_join`**
+
+The last two joins we look at are **filtering joins**. These match observations in two tables, but do not add variables. There are two types of filtering joins: semi-joins and anti-joins.
+
+A **semi join** keeps all observations from the first table that appear in the second (note variables are from the first table only):
+
+```{r}
+semi_join(x,y)
+```
+
+```{r}
+semi_join(y,x)
+```
+
+while an **anti join** *drops* all observations from the first table that appear in the second table (note variables are from the first table only).
+
+```{r}
+anti_join(x,y)
+```
+
+```{r}
+anti_join(y,x)
+```
+
+**Tip for beginners** -Use mutating joins when you want to add columns from another table. -Use filtering joins when you only want to keep or remove rows based on another table.
+
+**Guided Practice**
+
+Use the ratings and movies datasets. Try the following:
+
+1.  Add movie titles to the ratings dataset using a left join
+
+```{r}
+ratings_with_titles <- left_join(ratings, movies, by = "movieId")
+head(ratings_with_titles)
+```
+
+2.  Filter ratings for user 1 with rating \> 3, then add movie titles
+
+```{r}
+
+user1_likes <- ratings %>%
+filter(userId == 1 & rating > 3) %>%
+left_join(movies, by = "movieId") %>%
+select(userId, title, rating)
+head(user1_likes)
+```
+
+3.  Add user information to ratings_with_titles (assuming a users table exists)
+
+```{r, eval=FALSE}
+
+ratings_full <- ratings %>%
+left_join(movies, by = "movieId") %>%
+left_join(users, by = "userId") %>%
+head()
+ratings_full
+
+#Tip: Use select() after a join to pick only the relevant columns and keep your dataset tidy.
+```
+
+**Independent Practice**
+
+1.  Using the MovieLens data, use database joins to add the full movie title, genre, and IMDB id to the `ratings` dataset.
+
+2.Using x and y example tables, create a dataset that contains only rows present in both tables. Which join will you use?
+
+3.Using x and y again, create a dataset that contains all rows in x that do not appear in y. Which join should you use?
+
+4.  Optional challenge: For user 2, filter ratings \> 3, join with movies, and create a new column called liked that is 1 if rating \> 3.
+
+### Sources and references
+
+-   <http://r4ds.had.co.nz/transform.html>
+-   <http://r4ds.had.co.nz/relational-data.html>
+
+```{r, echo=T}
+print(sessionInfo(), locale = FALSE)
+```

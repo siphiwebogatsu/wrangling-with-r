@@ -1,0 +1,102 @@
+/* ===== Layout tweaks ===== */
+.main-container { max-width: 980px; }
+#toc .tocify { font-size: 0.95rem; }
+h1, h2 { margin-top: 1.2em; }
+
+/* ===== DataFirst colourway ===== */
+:root{
+  --df-teal: #007C91;   /* primary */
+  --df-teal-dark: #005B6B;
+  --df-text: #333333;
+  --df-white: #ffffff;
+}
+
+/* ===== Sidebar (all white) ===== */
+#sidebar {
+  background-color: var(--df-white) !important;
+  color: var(--df-teal) !important;
+  border: none !important;
+}
+#sidebar h2,
+#sidebar .toc-title {
+  background-color: var(--df-white) !important;
+  color: var(--df-teal) !important;
+  border: none !important;
+  font-weight: bold;
+}
+#toc .tocify a,
+#toc .tocify li {
+  background: var(--df-white) !important;
+  color: var(--df-teal) !important;
+}
+#toc .tocify a:hover,
+#toc .tocify .active,
+#toc .tocify .tocify-focus {
+  background-color: #E6F4F6 !important; /* light teal */
+  color: var(--df-teal-dark) !important;
+}
+#sidebar .toc-footer {
+  background-color: var(--df-white) !important;
+  color: var(--df-teal) !important;
+  border-top: 1px solid #ddd !important;
+}
+#sidebar .toc-footer a { color: var(--df-teal) !important; }
+
+/* ===== Content area ===== */
+h1, h2, h3, h4 { color: var(--df-teal); }
+a, a:visited { color: var(--df-teal); }
+a:hover { color: var(--df-teal-dark); text-decoration: underline; }
+
+/* ===== Hide auto title block from YAML (since you use a custom banner) ===== */
+.toc-content h1.title,
+.toc-content h2.subtitle,
+.toc-content p.author,
+.toc-content p.date { display: none !important; }
+
+/* ===== Banner (card style) ===== */
+.banner{
+  background: var(--df-teal);
+  color: #fff;
+  padding: 1.75rem 2rem;
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.12);
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin: 1rem 0 2rem; /* space above/below */
+}
+.banner .logo{
+  height: 72px;
+  width: auto;
+}
+
+/* Banner text lines (match your HTML: .banner-title ... ) */
+.banner-title .line1{        /* "DataFirst" */
+  font-size: 2.1rem;
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 0;
+}
+.banner-title .line2{        /* "Introduction to Data Analysis using R" */
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin: .25rem 0 0;
+}
+.banner-title .line3{        /* "Getting Started" */
+  font-size: 1.05rem;
+  font-style: italic;
+  margin: .35rem 0 0;
+  opacity: .95;
+}
+
+/* Keep links in banner white */
+.banner a { color: #fff; text-decoration: none; }
+.banner a:hover { text-decoration: underline; }
+
+/* Responsive tweak */
+@media (max-width: 640px){
+  .banner { flex-direction: column; align-items: flex-start; }
+  .banner .logo { height: 56px; }
+  .banner-title .line1 { font-size: 1.8rem; }
+  .banner-title .line2 { font-size: 1.15rem; }
+}
