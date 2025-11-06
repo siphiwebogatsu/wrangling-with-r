@@ -5,7 +5,7 @@ date: "2025-11-06"
 output: html_document
 ---
 
-You’ve just been hired as a junior data analyst at a fictional streaming startup CineMatch.
+You’ve just been hired as a junior data analyst at a fictional streaming start-up CineMatch.
 
 CineMatch is using the MovieLens data as a sandbox to:
 
@@ -25,7 +25,7 @@ Your job in this lab is to:
 
 Later, in Lab 2, you will use summaries, groups, and joins to turn this into useful insights.
 
-## Setup 
+## Setup
 
 ```{r}
 
@@ -40,11 +40,11 @@ links   <- read_csv("data/links.csv")
 
 ```
 
-## Part 1 - Get to know the movie catalog 
+## Part 1 - Get to know the movie catalog
 
 We will start with the catalog only: `title` and `genres`
 
-### Task 1.1 - Basic column selection 
+### Task 1.1 - Basic column selection
 
 CineMatch product managers only care (for now) about the movie titles and genres.
 
@@ -55,14 +55,16 @@ CineMatch product managers only care (for now) about the movie titles and genres
 ```{r}
 # Do it here. 
 # 1 
-
+movies = movies |>
+              select(movieId, title, genres)
 
 
 # 2 
-
+movies |> select(-genres)
 
 
 # 3
+movies |> select(title, genres)
 
 
 ```
@@ -71,33 +73,36 @@ CineMatch product managers only care (for now) about the movie titles and genres
 
 Right now, the release year is buried in the `title` (e.g., `"Toy Story (1995)"`). CineMatch wants it as its own column.
 
-### Task 2.1 Extract release year 
+### Task 2.1 Extract release year
 
-Create a new tibble `movies_years` that keeps all original columns and adds a numeric `year` column extracted from `title`.
+Create a new tibble `movies_years` from `movies` that keeps all original columns and adds a numeric `year` column extracted from `title`.
 
 ```{r}
 # Do it here.
 # hint: check what str_sub() does: type ?str_sub() in your console. 
-
-
+movie_year = movies|>
+  mutate(
+    year = as.numeric(str_sub(title, start = -5, end = -2))
+) 
 
 
 
 ```
 
-### Task 2.2 - Number of genres 
+### Task 2.2 - Number of genres
 
 In `movies_years`, create a new column `n_genres` that counts how many genres a movie has (they are separated by `" | "` ). Example is `"Action|Adventure|Sci-Fi`
 
 ```{r}
 # Do it here. 
+# Hint: find out what is str_count() in Packages. Or just write ?str_count in your console. 
 
 
 
 
 ```
 
-### Task 2.3 - Simple flags 
+### Task 2.3 - Simple flags
 
 Add these logical columns to movie_years:
 
@@ -118,7 +123,7 @@ These will be handy for kids' profiles later.
 
 Now you are helping curate collections for different parts of the app. Use only `movies_years` and `filter()`
 
-### Task 3.1 - 90s classics 
+### Task 3.1 - 90s classics
 
 Find all movies that released between 1990 and 1999 (inclusive) and that include `"Drama"` in their genres. Return only `title`, `year`, and `genres`.
 
@@ -129,7 +134,7 @@ Find all movies that released between 1990 and 1999 (inclusive) and that include
 
 ```
 
-### Task 3.2 - Action night 
+### Task 3.2 - Action night
 
 Find all movies have "Action" in their genres, released **after 2005**, and are not tagged as `"Children"` or `"Animation"` . Keep `title`, `year`, `genres`, `n_genres.`
 
@@ -160,11 +165,11 @@ Your colleague suspects the catalog has many remakes/reboots. Use only `filter()
 
 You now want nicely ordered lists for the Content Team.
 
-### Task 4.1 - Newest Films first 
+### Task 4.1 - Newest Films first
 
 Using `movies_years`,
 
--    Show the 20 most recent movies (by `year`), newest first.
+-   Show the 20 most recent movies (by `year`), newest first.
 
 -   Among movies released in 2015 or later, sort alphabetically by title.
 
@@ -176,7 +181,7 @@ Using `movies_years`,
 
 ```
 
-### Task 4.2 - Genre density 
+### Task 4.2 - Genre density
 
 Using `movie_years`,
 
@@ -190,7 +195,7 @@ Using `movie_years`,
 
 ```
 
-## Part 5 - "Weird but interesting" collection 
+## Part 5 - "Weird but interesting" collection
 
 CineMatch wants a "Hidden Gems" row. Criteria for this:
 
@@ -215,7 +220,7 @@ Construct it as a **single** pipeline
 
 Now you peek into individual user behavior without aggregating.
 
-### Task 6.1 - One user's history 
+### Task 6.1 - One user's history
 
 Pick a user ID and do the following:
 

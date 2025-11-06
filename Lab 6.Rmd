@@ -1,0 +1,185 @@
+---
+title: "Lab 6"
+author: "Siphiwe Bogatsu"
+date: "2025-11-06"
+output: html_document
+---
+
+You are still a junior data analyst at CineMatch. After cleaning and exploring MovieLens in Lab 1. Leadership now wants:
+
+1.  Best and worst movies (with enough ratings)
+
+2.  Heavy users & rating behaviour
+
+3.  Genre performance
+
+4.  How tags and external IDs (IMDb) can enrich insights
+
+To do this, you will use `group_by()` , `summarise()` and joins to combine tables.
+
+## Setup 
+
+```{r}
+library(tidyverse)
+library(lubridate)
+
+movies  <- read_csv("data/movies.csv")
+ratings <- read_csv("data/ratings.csv")
+tags    <- read_csv("data/tags.csv")
+links   <- read_csv("data/links.csv")
+
+# Answer all questions in Lab 1 to see this.  
+movies_enriched <- movies |>
+  mutate(
+    year = parse_number(str_sub(title, -6, -1)),
+    n_genres = if_else(
+      genres == "(no genres listed)",
+      0L,
+      str_count(genres, "\\|") + 1L
+    ),
+    is_animation = str_detect(genres, "Animation"),
+    is_family_friendly = str_detect(genres, "Children|Animation")
+  )
+
+```
+
+## Part 1 - Warm up with `summarise()`
+
+CineMatch wants a quick health check of the ratings data.
+
+### Task 1.1 - Overall statistics 
+
+On `ratings` , compute:
+
+1.  Total number of ratings
+2.  Number of unique users
+3.  Number of unique movies rated
+4.  Minimum, maximum, and average rating
+
+Try creating this in one pipeline. Use `summarise()` + `n_distinct()`
+
+```{r}
+# do it here
+
+```
+
+Does this average rating suggest users are harsh, generous, or neutral?
+
+## Part 2 - Movie-level summaries 
+
+Now you will turn hundreds of thousands of rows into something human- readable
+
+### Task 2.1 - Per-movie statistics 
+
+Create a table `movie_stats` from `ratings` with one row per `movieId:`
+
+-   `n_ratings` - how many ratings the movie received
+
+-   `avg_rating` - average rating
+
+-   `sd_rating` - standard deviation of ratings
+
+Use `group_by(movie_Id)` + `summarise()`
+
+```{r}
+# Do it here 
+
+
+```
+
+### Task 2.2 - "Promote-worthy" movies
+
+Using `movie_stats` only:
+
+1.  Filter to movies with at least 50 ratings
+2.  Sort by avg_rating (descending)
+3.  Look at the top 10 rows
+
+```{r}
+# Do it here 
+
+
+```
+
+### Task 2.3 - Movies people dislike 
+
+Still using movies with at least 50 ratings, list the 10 movies with the lowest average rating.
+
+```{r}
+# Do it here 
+
+```
+
+## Part 3 - User-level summaries 
+
+Management also wants to understand user behavior.
+
+### Task 3.1 - Per-user statistics 
+
+Create `user_stat` from ratings with one row per `userId`:
+
+-   `n_ratings` - how many ratings they have made
+
+-   `avg_rating` - their mean rating
+
+```{r}
+# Do it here
+
+
+```
+
+### Task 3.2 - Power users & harsh critics 
+
+Using `user_stats`:
+
+-   Filter users with at least 200 ratings
+-   Among these users:
+    -   Find the 5 with the highest `avg_rating`
+
+    -   Find the 5 with the lowest `avg_rating`
+
+## Part 4 - Joining movie statistics with movie information 
+
+So far you have only had `movieId`s. CineMatch wants titles and genres back in the picture.
+
+### Task 4.1 - Add titles to statistics 
+
+Join movie_stats with movie_enriched to create movie_scores that includes `movieId`, `title`, `year`, `genres`, `n_ratings,` `avg_rating`, `n_genres`, `is_family_friendly`, etc.
+
+Which join should you use so that you only keep movies that actually have ratings?
+
+```{r}
+# Do it here
+```
+
+### Task 4.2 - Best family-friendly picks 
+
+Using `movie_scores`:
+
+-   Filter to movies:
+    -   `is_family_friendly == TRUE`
+    -   `n_ratings >= 50`
+-   Sort by `avg_rating` (descending)
+-   Show the top 15 with `title`, `year`, `avg_rating`, `n_ratings`
+
+```{r}
+# Do it here
+
+```
+
+### Task 4.3 - "Cult favorites" 
+
+Using `movie_scores:`
+
+Find movies that were released after 1985`,` total ratings between 30 and 100, and average rating greater than 4.2. List `title`, `year`, `avg_rating`, `n_ratings` .
+
+```{r}
+# Do it here
+
+```
+
+## Part 5 - Genre insights
+
+CineMatch wants to know which genres tend to perform best?
+
+You will treat each assigned genre separately.
