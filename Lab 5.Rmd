@@ -1,0 +1,249 @@
+---
+title: "Lab 5"
+author: "Siphiwe Bogatsu"
+date: "2025-11-06"
+output: html_document
+---
+
+You’ve just been hired as a junior data analyst at a fictional streaming startup CineMatch.
+
+CineMatch is using the MovieLens data as a sandbox to:
+
+1.  Understand its potential movie catalog
+
+2.  Inspect individual rating records
+
+3.  Prepare for richer analyses you’ll do later (aggregates, genres, recommendations, etc.)
+
+Your job in this lab is to:
+
+-   Explore the data tables one at a time.
+
+-   Clean and transform columns
+
+-   Filter and reorder rows to answer practical questions
+
+Later, in Lab 2, you will use summaries, groups, and joins to turn this into useful insights.
+
+## Setup 
+
+```{r}
+
+# Load the packages 
+library(tidyverse)
+
+# Load the data sets 
+movies  <- read_csv("data/movies.csv")
+ratings <- read_csv("data/ratings.csv")
+tags    <- read_csv("data/tags.csv")
+links   <- read_csv("data/links.csv")
+
+```
+
+## Part 1 - Get to know the movie catalog 
+
+We will start with the catalog only: `title` and `genres`
+
+### Task 1.1 - Basic column selection 
+
+CineMatch product managers only care (for now) about the movie titles and genres.
+
+1.  Create a data frame with only `movieId`, `title`, and `genres`
+2.  Create another version that drops the `genres` columns
+3.  Select all columns except `movieId`
+
+```{r}
+# Do it here. 
+# 1 
+
+
+
+# 2 
+
+
+
+# 3
+
+
+```
+
+## Part 2 - Create useful variables with `mutate()`
+
+Right now, the release year is buried in the `title` (e.g., `"Toy Story (1995)"`). CineMatch wants it as its own column.
+
+### Task 2.1 Extract release year 
+
+Create a new tibble `movies_years` that keeps all original columns and adds a numeric `year` column extracted from `title`.
+
+```{r}
+# Do it here.
+# hint: check what str_sub() does: type ?str_sub() in your console. 
+
+
+
+
+
+```
+
+### Task 2.2 - Number of genres 
+
+In `movies_years`, create a new column `n_genres` that counts how many genres a movie has (they are separated by `" | "` ). Example is `"Action|Adventure|Sci-Fi`
+
+```{r}
+# Do it here. 
+
+
+
+
+```
+
+### Task 2.3 - Simple flags 
+
+Add these logical columns to movie_years:
+
+-   `is_animation` - **TRUE** if `"Animation"` is among the genres.
+
+-   `is_family_friendly` - **TRUE** if it's tagged as `"Children" or "Animation"` (or both)
+
+These will be handy for kids' profiles later.
+
+```{r}
+
+# Do it here. 
+
+
+```
+
+## Part 3 - Filtering the catalog with `filter()`
+
+Now you are helping curate collections for different parts of the app. Use only `movies_years` and `filter()`
+
+### Task 3.1 - 90s classics 
+
+Find all movies that released between 1990 and 1999 (inclusive) and that include `"Drama"` in their genres. Return only `title`, `year`, and `genres`.
+
+```{r}
+# Do it here. 
+
+
+
+```
+
+### Task 3.2 - Action night 
+
+Find all movies have "Action" in their genres, released **after 2005**, and are not tagged as `"Children"` or `"Animation"` . Keep `title`, `year`, `genres`, `n_genres.`
+
+```{r}
+# Do it here. 
+
+
+```
+
+### Task 3.3 - Sequel check (Challenging)
+
+Your colleague suspects the catalog has many remakes/reboots. Use only `filter()` and string matching:
+
+-   List movies whose titles contains "Star Wars".
+
+-   List movies whose titles contains "Batman" but **not** "The Lego Batman Movie".
+
+-   Filter movies whose titles contains either "Part" or a roman numeral "II", "III" "IV" (as a crude sequel detector)
+
+```{r}
+# Do it here. 
+
+
+
+```
+
+## Part 4 - Ordering results with `arrange()`
+
+You now want nicely ordered lists for the Content Team.
+
+### Task 4.1 - Newest Films first 
+
+Using `movies_years`,
+
+-    Show the 20 most recent movies (by `year`), newest first.
+
+-   Among movies released in 2015 or later, sort alphabetically by title.
+
+```{r}
+# do it here. 
+
+
+
+
+```
+
+### Task 4.2 - Genre density 
+
+Using `movie_years`,
+
+-   Arrange movies by n_genres (descending), then by `title`. Look at the top 10 rows. What do you notice?
+
+```{r}
+
+# Do it here. 
+
+
+
+```
+
+## Part 5 - "Weird but interesting" collection 
+
+CineMatch wants a "Hidden Gems" row. Criteria for this:
+
+1.  Released between 1980 and 2010
+2.  Have atleast 3 genres
+3.  Are not marked is_family_friendly,
+4.  Sorted with the most genre-heavy first, then newest.
+
+Construct it as a **single** pipeline
+
+```{r}
+# Do it here. 
+
+
+
+
+
+
+```
+
+## Part 6 - Working with raw rating rows
+
+Now you peek into individual user behavior without aggregating.
+
+### Task 6.1 - One user's history 
+
+Pick a user ID and do the following:
+
+1.  Filter ratings to this user.
+2.  Arrange their ratings from most recent to oldest (you will need `arrange()` with `desc()` )
+3.  Filter to show only the movies where this user gave 5 stars.
+
+What kinds of movies does this user love? We will tie this to titles via joins in Lab 6. Brace yourselves.
+
+```{r}
+
+# do it here 
+
+
+
+```
+
+### Task 6.2 - Tag sniffing (bonus)
+
+Using `tags:`
+
+1.  Filter rows where `tag` contains "boring" (any capitalization).
+2.  Filter rows where `tag` contains "masterpiece" or "underrated".
+3.  Keep just `userId`, `movieId`, `tag`.
+
+Think of these as raw "signals" we will later combine with `ratings` and `movies`.
+
+```{r}
+
+# Do it here. 
+```
